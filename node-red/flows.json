@@ -1,0 +1,767 @@
+[
+    {
+        "id": "cc6b22398a4617fd",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "36ad9cd5a99a4d61",
+        "type": "mqtt in",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "topic": "sensor/rainfall",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "a2f96cead7353d8d",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 280,
+        "y": 380,
+        "wires": [
+            [
+                "b741ff403755751b"
+            ]
+        ]
+    },
+    {
+        "id": "428db43df8487306",
+        "type": "function",
+        "z": "cc6b22398a4617fd",
+        "name": "Format Data",
+        "func": "var data = [[]];\nvar label = [];\n\nfor (var i = 0; i < msg.payload.rows.length; i++) {\n    var row = msg.payload.rows[i];\n    data[0].push(row['rainfall_mm']);  // ambil nilai curah hujan\n\n    // Ambil jam dan menit dari created_at\n    const d = new Date(row['created_at']);\n    // d.setHours(d.getHours() + 7);\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    // Format jadi HH:MM\n    label.push(`${hours}:${minutes}`);\n}\n\nvar m = {\n    series: [\"Curah Hujan (mm)\"],\n    data: data,\n    labels: label\n};\n\nmsg.payload = [m];\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 520,
+        "wires": [
+            [
+                "2170f0d11751b417"
+            ]
+        ]
+    },
+    {
+        "id": "b741ff403755751b",
+        "type": "function",
+        "z": "cc6b22398a4617fd",
+        "name": "get data",
+        "func": "// Ambil nilai dari msg.payload.value\nlet value = msg.payload.value;\nlet location = msg.payload.location;\nlet createdAt = msg.payload.created_at;\n\nmsg.payload.value = value;\nmsg.payload.location = location;\nmsg.payload.createdAt = createdAt;\n\nreturn msg;\n ",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 380,
+        "wires": [
+            [
+                "0bc4f2f2122a3e4a"
+            ]
+        ]
+    },
+    {
+        "id": "ad9d678a265a949a",
+        "type": "function",
+        "z": "cc6b22398a4617fd",
+        "name": "Delete data",
+        "func": "msg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 580,
+        "wires": [
+            [
+                "2170f0d11751b417"
+            ]
+        ]
+    },
+    {
+        "id": "fcbab9d08c0169bb",
+        "type": "postgrestor",
+        "z": "cc6b22398a4617fd",
+        "name": "sensor value",
+        "query": "SELECT *\nFROM (\n    SELECT *\n    FROM rainfall_data\n    ORDER BY id DESC\n    LIMIT 10\n) AS latest\nORDER BY id ASC;\n",
+        "postgresDB": "d1c317d01ab06818",
+        "output": true,
+        "outputs": 1,
+        "throwErrors": false,
+        "x": 910,
+        "y": 520,
+        "wires": [
+            [
+                "428db43df8487306"
+            ]
+        ]
+    },
+    {
+        "id": "0bc4f2f2122a3e4a",
+        "type": "postgrestor",
+        "z": "cc6b22398a4617fd",
+        "name": "input sensor value",
+        "query": "INSERT INTO rainfall_data (location, rainfall_mm, created_at, updated_at) \nVALUES ('{{ msg.payload.location }}', {{ msg.payload.value }}, '{{ msg.payload.createdAt }}', '{{ msg.payload.createdAt }}');",
+        "postgresDB": "d1c317d01ab06818",
+        "output": true,
+        "outputs": 1,
+        "throwErrors": false,
+        "x": 690,
+        "y": 460,
+        "wires": [
+            [
+                "fcbab9d08c0169bb"
+            ]
+        ]
+    },
+    {
+        "id": "3b9aad6de7ee3622",
+        "type": "ui_button",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "group": "240763e370494493",
+        "order": 3,
+        "width": 7,
+        "height": 1,
+        "passthru": false,
+        "label": "Refresh Data Curah Hujan",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "fa-refresh",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 640,
+        "y": 520,
+        "wires": [
+            [
+                "fcbab9d08c0169bb"
+            ]
+        ]
+    },
+    {
+        "id": "a2bfd945021f3e26",
+        "type": "ui_button",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "group": "240763e370494493",
+        "order": 2,
+        "width": 7,
+        "height": 1,
+        "passthru": false,
+        "label": "Delete Data",
+        "tooltip": "",
+        "color": "white",
+        "bgcolor": "red",
+        "className": "",
+        "icon": "fa-trash",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 910,
+        "y": 580,
+        "wires": [
+            [
+                "ad9d678a265a949a"
+            ]
+        ]
+    },
+    {
+        "id": "2170f0d11751b417",
+        "type": "ui_chart",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "group": "240763e370494493",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "Data Curah Hujan",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "There is no data, try to refresh",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "150",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1370,
+        "y": 520,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "98e09af2a1394b0f",
+        "type": "mqtt in",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "topic": "sensor/humidity",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "a2f96cead7353d8d",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 270,
+        "y": 720,
+        "wires": [
+            [
+                "d1d5ce20c6ee3267"
+            ]
+        ]
+    },
+    {
+        "id": "9c824af35ce47654",
+        "type": "function",
+        "z": "cc6b22398a4617fd",
+        "name": "Format Data",
+        "func": "var data = [[]];\nvar label = [];\n\nfor (var i = 0; i < msg.payload.rows.length; i++) {\n    var row = msg.payload.rows[i];\n    data[0].push(row['value']);  // ambil nilai curah hujan\n\n    // Ambil jam dan menit dari created_at\n    const d = new Date(row['created_at']);\n    // d.setHours(d.getHours() + 7);\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    // Format jadi HH:MM\n    label.push(`${hours}:${minutes}`);\n}\n\nvar m = {\n    series: [\"Kelembapan)\"],\n    data: data,\n    labels: label\n};\n\nmsg.payload = [m];\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1090,
+        "y": 860,
+        "wires": [
+            [
+                "fbae3caf991171af"
+            ]
+        ]
+    },
+    {
+        "id": "4b18331c4302bcf6",
+        "type": "function",
+        "z": "cc6b22398a4617fd",
+        "name": "Delete data",
+        "func": "msg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1090,
+        "y": 920,
+        "wires": [
+            [
+                "fbae3caf991171af"
+            ]
+        ]
+    },
+    {
+        "id": "7bb5da80d441d22e",
+        "type": "postgrestor",
+        "z": "cc6b22398a4617fd",
+        "name": "sensor value",
+        "query": "SELECT *\nFROM (\n    SELECT *\n    FROM humidity\n    ORDER BY id DESC\n    LIMIT 10\n) AS latest\nORDER BY id ASC;\n",
+        "postgresDB": "d1c317d01ab06818",
+        "output": true,
+        "outputs": 1,
+        "throwErrors": false,
+        "x": 890,
+        "y": 860,
+        "wires": [
+            [
+                "9c824af35ce47654"
+            ]
+        ]
+    },
+    {
+        "id": "bffb4ac6a4b5740a",
+        "type": "postgrestor",
+        "z": "cc6b22398a4617fd",
+        "name": "input sensor value",
+        "query": "INSERT INTO humidity (location, value, created_at, updated_at) \nVALUES ('{{ msg.payload.location }}', {{ msg.payload.value }}, '{{ msg.payload.createdAt }}', '{{ msg.payload.createdAt }}');",
+        "postgresDB": "d1c317d01ab06818",
+        "output": true,
+        "outputs": 1,
+        "throwErrors": false,
+        "x": 670,
+        "y": 800,
+        "wires": [
+            [
+                "7bb5da80d441d22e"
+            ]
+        ]
+    },
+    {
+        "id": "93c79a8717485681",
+        "type": "ui_button",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "group": "240763e370494493",
+        "order": 7,
+        "width": 7,
+        "height": 1,
+        "passthru": false,
+        "label": "Refresh Data Kelembapan",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "fa-refresh",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 560,
+        "y": 860,
+        "wires": [
+            [
+                "7bb5da80d441d22e"
+            ]
+        ]
+    },
+    {
+        "id": "34d681bf9cefcd21",
+        "type": "ui_button",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "group": "240763e370494493",
+        "order": 6,
+        "width": 7,
+        "height": 1,
+        "passthru": false,
+        "label": "Delete Data",
+        "tooltip": "",
+        "color": "white",
+        "bgcolor": "red",
+        "className": "",
+        "icon": "fa-trash",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 890,
+        "y": 920,
+        "wires": [
+            [
+                "4b18331c4302bcf6"
+            ]
+        ]
+    },
+    {
+        "id": "fbae3caf991171af",
+        "type": "ui_chart",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "group": "240763e370494493",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "label": "Data Kelembapan Udara",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "There is no data, try to refresh",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "150",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1370,
+        "y": 860,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "241b792ac6b83a37",
+        "type": "mqtt in",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "topic": "sensor/soil_moisture",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "a2f96cead7353d8d",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 240,
+        "y": 980,
+        "wires": [
+            [
+                "96486b69b37c11fb"
+            ]
+        ]
+    },
+    {
+        "id": "57d02b4527af37d1",
+        "type": "function",
+        "z": "cc6b22398a4617fd",
+        "name": "Format Data",
+        "func": "var data = [[]];\nvar label = [];\n\nfor (var i = 0; i < msg.payload.rows.length; i++) {\n    var row = msg.payload.rows[i];\n    data[0].push(row['value']);  // ambil nilai curah hujan\n\n    // Ambil jam dan menit dari created_at\n    const d = new Date(row['created_at']);\n    // d.setHours(d.getHours() + 7);\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    // Format jadi HH:MM\n    label.push(`${hours}:${minutes}`);\n}\n\nvar m = {\n    series: [\"Kelembapan tanah\"],\n    data: data,\n    labels: label\n};\n\nmsg.payload = [m];\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1090,
+        "y": 1120,
+        "wires": [
+            [
+                "a9a513a3431284e3"
+            ]
+        ]
+    },
+    {
+        "id": "b6973a278d9a879d",
+        "type": "function",
+        "z": "cc6b22398a4617fd",
+        "name": "Delete data",
+        "func": "msg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1090,
+        "y": 1180,
+        "wires": [
+            [
+                "a9a513a3431284e3"
+            ]
+        ]
+    },
+    {
+        "id": "2d3b2b00c58dd0c1",
+        "type": "postgrestor",
+        "z": "cc6b22398a4617fd",
+        "name": "sensor value",
+        "query": "SELECT *\nFROM (\n    SELECT *\n    FROM soil_moisture\n    ORDER BY id DESC\n    LIMIT 10\n) AS latest\nORDER BY id ASC;\n",
+        "postgresDB": "d1c317d01ab06818",
+        "output": true,
+        "outputs": 1,
+        "throwErrors": false,
+        "x": 890,
+        "y": 1120,
+        "wires": [
+            [
+                "57d02b4527af37d1"
+            ]
+        ]
+    },
+    {
+        "id": "4b4444334962d005",
+        "type": "postgrestor",
+        "z": "cc6b22398a4617fd",
+        "name": "input sensor value",
+        "query": "INSERT INTO soil_moisture (location, value, created_at, updated_at) \nVALUES ('{{ msg.payload.location }}', {{ msg.payload.value }}, '{{ msg.payload.createdAt }}', '{{ msg.payload.createdAt }}');",
+        "postgresDB": "d1c317d01ab06818",
+        "output": true,
+        "outputs": 1,
+        "throwErrors": false,
+        "x": 670,
+        "y": 1060,
+        "wires": [
+            [
+                "2d3b2b00c58dd0c1"
+            ]
+        ]
+    },
+    {
+        "id": "851176c9f585f770",
+        "type": "ui_button",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "group": "240763e370494493",
+        "order": 11,
+        "width": 7,
+        "height": 1,
+        "passthru": false,
+        "label": "Refresh Data Kelembapan Tanah",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "fa-refresh",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 560,
+        "y": 1160,
+        "wires": [
+            [
+                "2d3b2b00c58dd0c1"
+            ]
+        ]
+    },
+    {
+        "id": "3cc2b8d3a2530f9e",
+        "type": "ui_button",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "group": "240763e370494493",
+        "order": 10,
+        "width": 7,
+        "height": 1,
+        "passthru": false,
+        "label": "Delete Data",
+        "tooltip": "",
+        "color": "white",
+        "bgcolor": "red",
+        "className": "",
+        "icon": "fa-trash",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 890,
+        "y": 1180,
+        "wires": [
+            [
+                "b6973a278d9a879d"
+            ]
+        ]
+    },
+    {
+        "id": "a9a513a3431284e3",
+        "type": "ui_chart",
+        "z": "cc6b22398a4617fd",
+        "name": "",
+        "group": "240763e370494493",
+        "order": 9,
+        "width": 0,
+        "height": 0,
+        "label": "Data Kelembapan tanah",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "There is no data, try to refresh",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "150",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1370,
+        "y": 1120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d1d5ce20c6ee3267",
+        "type": "function",
+        "z": "cc6b22398a4617fd",
+        "name": "get data",
+        "func": "// Ambil nilai dari msg.payload.value\nlet value = msg.payload.value;\nlet location = msg.payload.location;\nlet createdAt = msg.payload.created_at;\n\nmsg.payload.value = value;\nmsg.payload.location = location;\nmsg.payload.createdAt = createdAt;\n\nreturn msg;\n ",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 720,
+        "wires": [
+            [
+                "bffb4ac6a4b5740a"
+            ]
+        ]
+    },
+    {
+        "id": "96486b69b37c11fb",
+        "type": "function",
+        "z": "cc6b22398a4617fd",
+        "name": "get data",
+        "func": "// Ambil nilai dari msg.payload.value\nlet value = msg.payload.value;\nlet location = msg.payload.location;\nlet createdAt = msg.payload.created_at;\n\nmsg.payload.value = value;\nmsg.payload.location = location;\nmsg.payload.createdAt = createdAt;\n\nreturn msg;\n ",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 960,
+        "wires": [
+            [
+                "4b4444334962d005"
+            ]
+        ]
+    },
+    {
+        "id": "38641d5cc38c3306",
+        "type": "ui_spacer",
+        "z": "cc6b22398a4617fd",
+        "name": "spacer",
+        "group": "240763e370494493",
+        "order": 4,
+        "width": 14,
+        "height": 1
+    },
+    {
+        "id": "c9ea1df396faab39",
+        "type": "ui_spacer",
+        "z": "cc6b22398a4617fd",
+        "name": "spacer",
+        "group": "240763e370494493",
+        "order": 8,
+        "width": 14,
+        "height": 1
+    },
+    {
+        "id": "a2f96cead7353d8d",
+        "type": "mqtt-broker",
+        "name": "pkl",
+        "broker": "mqtt5",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "d1c317d01ab06818",
+        "type": "postgresDB",
+        "name": "local db",
+        "throwErrors": true,
+        "throwErrorsFieldType": "bool",
+        "host": "postgres",
+        "hostFieldType": "str",
+        "port": 5432,
+        "portFieldType": "num",
+        "database": "nodered_db",
+        "databaseFieldType": "str",
+        "ssl": "false",
+        "sslFieldType": "bool",
+        "max": 10,
+        "maxFieldType": "num",
+        "min": 1,
+        "minFieldType": "num",
+        "idle": 1000,
+        "idleFieldType": "num",
+        "connectionTimeout": 10000,
+        "connectionTimeoutFieldType": "num",
+        "user": "nodered_user",
+        "userFieldType": "str",
+        "password": "supersecretpassword",
+        "passwordFieldType": "str"
+    },
+    {
+        "id": "240763e370494493",
+        "type": "ui_group",
+        "name": "Status Cuaca",
+        "tab": "d7998e1129f0fec4",
+        "order": 1,
+        "disp": false,
+        "width": 14,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "d7998e1129f0fec4",
+        "type": "ui_tab",
+        "name": "PKL BRMP Jestro",
+        "icon": "fa-pie-chart",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "762048ba97a2ed8e",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-postgrestor-next": "0.5.2",
+            "node-red-dashboard": "3.6.6"
+        }
+    }
+]

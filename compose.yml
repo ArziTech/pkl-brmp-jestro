@@ -1,0 +1,51 @@
+
+################################################################################
+# Node-RED + PostgreSQL + Mosquitto (MQTT Broker)
+################################################################################
+version: "3.7"
+
+services:
+  node-red:
+    build: ./node-red/
+    environment:
+      - TZ=Europe/Amsterdam
+    ports:
+      - "1880:1880"
+    networks:
+      - mqtt5-network
+    depends_on:
+      - postgres
+      - mqtt5
+  postgres:
+    build: ./postgres/
+    container_name: postgres-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER} 
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - TZ=Europe/Amsterdam
+    #ports:
+    #  - "5432:5432"
+    networks:
+      - mqtt5-network
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+  # mqtt5 eclipse-mosquitto
+  mqtt5:
+    image: eclipse-mosquitto
+    container_name: mqtt5
+    ports:
+      - "1883:1883" #default mqtt port
+      - "9001:9001" #default mqtt port for websockets
+    volumes:
+      - ./volumes/mosquitto/config:/mosquitto/config:rw
+      - ./volumes/mosquitto/data:/mosquitto/data:rw
+      - ./volumes/mosquitto/log:/mosquitto/log:rw
+    restart: unless-stopped  
+    networks:
+      - mqtt5-network
+
+networks:
+  mqtt5-network:
+    driver: bridge
