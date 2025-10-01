@@ -1,6 +1,6 @@
 [
     {
-        "id": "cc6b22398a4617fd",
+        "id": "aff208f6d9a2dcb3",
         "type": "tab",
         "label": "Flow 1",
         "disabled": false,
@@ -8,11 +8,11 @@
         "env": []
     },
     {
-        "id": "36ad9cd5a99a4d61",
+        "id": "52fe503a99b806b9",
         "type": "mqtt in",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
-        "topic": "sensor/rainfall",
+        "topic": "sensor-pkl/rainfall",
         "qos": "1",
         "datatype": "auto-detect",
         "broker": "a2f96cead7353d8d",
@@ -20,20 +20,20 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 280,
+        "x": 260,
         "y": 380,
         "wires": [
             [
-                "b741ff403755751b"
+                "142ed083344fbb6a"
             ]
         ]
     },
     {
-        "id": "428db43df8487306",
+        "id": "ac74d8baa78e26e6",
         "type": "function",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "Format Data",
-        "func": "var data = [[]];\nvar label = [];\n\nfor (var i = 0; i < msg.payload.rows.length; i++) {\n    var row = msg.payload.rows[i];\n    data[0].push(row['rainfall_mm']);  // ambil nilai curah hujan\n\n    // Ambil jam dan menit dari created_at\n    const d = new Date(row['created_at']);\n    // d.setHours(d.getHours() + 7);\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    // Format jadi HH:MM\n    label.push(`${hours}:${minutes}`);\n}\n\nvar m = {\n    series: [\"Curah Hujan (mm)\"],\n    data: data,\n    labels: label\n};\n\nmsg.payload = [m];\nreturn msg;\n",
+        "func": "var data = [[]];\nvar label = [];\n\nfor (var i = 0; i < msg.payload.rows.length; i++) {\n    var row = msg.payload.rows[i];\n    data[0].push(row['sessionrain']);  // ambil nilai curah hujan\n\n    // Ambil jam dan menit dari created_at\n    const d = new Date(row['created_at']);\n    // d.setHours(d.getHours() + 7);\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    // Format jadi HH:MM\n    label.push(`${hours}:${minutes}`);\n}\n\nvar m = {\n    series: [\"Curah Hujan (mm)\"],\n    data: data,\n    labels: label\n};\n\nmsg.payload = [m];\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -44,16 +44,16 @@
         "y": 520,
         "wires": [
             [
-                "2170f0d11751b417"
+                "3d916e8f9912bbf3"
             ]
         ]
     },
     {
-        "id": "b741ff403755751b",
+        "id": "142ed083344fbb6a",
         "type": "function",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "get data",
-        "func": "// Ambil nilai dari msg.payload.value\nlet value = msg.payload.value;\nlet location = msg.payload.location;\nlet createdAt = msg.payload.created_at;\n\nmsg.payload.value = value;\nmsg.payload.location = location;\nmsg.payload.createdAt = createdAt;\n\nreturn msg;\n ",
+        "func": "// Ambil nilai dari msg.payload.value\nlet tippingCount = msg.payload.tippingCount;\nlet sessionRain = msg.payload.sessionRain;\n\n // Ambil nilai dari msg.payload.value\nlet temp = msg.payload.temp;\nlet rh = msg.payload.rh;\n\nlet d = new Date();\n// geser ke +7 jam\nd.setHours(d.getHours() + 7);\nlet createdAt = d.toISOString();\n\n\n// pastikan moisture adalah angka\nlet tippingCountNum = parseFloat(tippingCount);\nif (isNaN(tippingCountNum)) {\n    tippingCountNum = 0;  // default kalau kosong/error\n}\nlet sessionRainNum = parseFloat(sessionRain);\nif (isNaN(sessionRainNum)) {\n    sessionRainNum = 0;  // default kalau kosong/error\n}\n\n// set payload baru\nmsg.payload = {\n    tippingCount: tippingCountNum,\n    sessionRain: sessionRainNum,\n    createdAt: createdAt\n};\n\nreturn msg;\n ",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -64,14 +64,15 @@
         "y": 380,
         "wires": [
             [
-                "0bc4f2f2122a3e4a"
+                "517ae685618e3506",
+                "015ed2252f17c8f3"
             ]
         ]
     },
     {
-        "id": "ad9d678a265a949a",
+        "id": "7bf629f226e333b2",
         "type": "function",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "Delete data",
         "func": "msg.payload = [];\nreturn msg;",
         "outputs": 1,
@@ -84,14 +85,14 @@
         "y": 580,
         "wires": [
             [
-                "2170f0d11751b417"
+                "3d916e8f9912bbf3"
             ]
         ]
     },
     {
-        "id": "fcbab9d08c0169bb",
+        "id": "ed5932ccfa4fc117",
         "type": "postgrestor",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "sensor value",
         "query": "SELECT *\nFROM (\n    SELECT *\n    FROM rainfall_data\n    ORDER BY id DESC\n    LIMIT 10\n) AS latest\nORDER BY id ASC;\n",
         "postgresDB": "d1c317d01ab06818",
@@ -102,32 +103,32 @@
         "y": 520,
         "wires": [
             [
-                "428db43df8487306"
+                "ac74d8baa78e26e6"
             ]
         ]
     },
     {
-        "id": "0bc4f2f2122a3e4a",
+        "id": "517ae685618e3506",
         "type": "postgrestor",
-        "z": "cc6b22398a4617fd",
-        "name": "input sensor value",
-        "query": "INSERT INTO rainfall_data (location, rainfall_mm, created_at, updated_at) \nVALUES ('{{ msg.payload.location }}', {{ msg.payload.value }}, '{{ msg.payload.createdAt }}', '{{ msg.payload.createdAt }}');",
+        "z": "aff208f6d9a2dcb3",
+        "name": "input sensor value rain",
+        "query": "INSERT INTO rainfall_data (tippingcount, sessionrain, created_at, updated_at) \nVALUES ({{ msg.payload.tippingCount }}, {{ msg.payload.sessionRain }}, '{{ msg.payload.createdAt }}', '{{ msg.payload.createdAt }}');",
         "postgresDB": "d1c317d01ab06818",
         "output": true,
         "outputs": 1,
         "throwErrors": false,
-        "x": 690,
+        "x": 700,
         "y": 460,
         "wires": [
             [
-                "fcbab9d08c0169bb"
+                "ed5932ccfa4fc117"
             ]
         ]
     },
     {
-        "id": "3b9aad6de7ee3622",
+        "id": "a114174924d0eca1",
         "type": "ui_button",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
         "group": "240763e370494493",
         "order": 3,
@@ -148,14 +149,14 @@
         "y": 520,
         "wires": [
             [
-                "fcbab9d08c0169bb"
+                "ed5932ccfa4fc117"
             ]
         ]
     },
     {
-        "id": "a2bfd945021f3e26",
+        "id": "c2e7a1b445dc8aea",
         "type": "ui_button",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
         "group": "240763e370494493",
         "order": 2,
@@ -176,14 +177,14 @@
         "y": 580,
         "wires": [
             [
-                "ad9d678a265a949a"
+                "7bf629f226e333b2"
             ]
         ]
     },
     {
-        "id": "2170f0d11751b417",
+        "id": "3d916e8f9912bbf3",
         "type": "ui_chart",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
         "group": "240763e370494493",
         "order": 1,
@@ -197,7 +198,7 @@
         "nodata": "There is no data, try to refresh",
         "dot": false,
         "ymin": "0",
-        "ymax": "150",
+        "ymax": "50",
         "removeOlder": 1,
         "removeOlderPoints": "",
         "removeOlderUnit": "3600",
@@ -225,11 +226,11 @@
         ]
     },
     {
-        "id": "98e09af2a1394b0f",
+        "id": "a1a9ce7b0d2187e9",
         "type": "mqtt in",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
-        "topic": "sensor/humidity",
+        "topic": "sensor-pkl/humidity",
         "qos": "1",
         "datatype": "auto-detect",
         "broker": "a2f96cead7353d8d",
@@ -237,20 +238,20 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 270,
+        "x": 250,
         "y": 720,
         "wires": [
             [
-                "d1d5ce20c6ee3267"
+                "8730c9f2ee8d6810"
             ]
         ]
     },
     {
-        "id": "9c824af35ce47654",
+        "id": "9cf25f5bd71138a0",
         "type": "function",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "Format Data",
-        "func": "var data = [[]];\nvar label = [];\n\nfor (var i = 0; i < msg.payload.rows.length; i++) {\n    var row = msg.payload.rows[i];\n    data[0].push(row['value']);  // ambil nilai curah hujan\n\n    // Ambil jam dan menit dari created_at\n    const d = new Date(row['created_at']);\n    // d.setHours(d.getHours() + 7);\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    // Format jadi HH:MM\n    label.push(`${hours}:${minutes}`);\n}\n\nvar m = {\n    series: [\"Kelembapan)\"],\n    data: data,\n    labels: label\n};\n\nmsg.payload = [m];\nreturn msg;\n",
+        "func": "var data = [[], []];\nvar label = [];\n\nfor (var i = 0; i < msg.payload.rows.length; i++) {\n    var row = msg.payload.rows[i];\n    data[0].push(row['temp']);  // ambil nilai curah hujan\n    data[1].push(row['rh']);\n    \n    // Ambil jam dan menit dari created_at\n    const d = new Date(row['created_at']);\n    // d.setHours(d.getHours() + 7);\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    // Format jadi HH:MM\n    label.push(`${hours}:${minutes}`);\n}\n\nvar m = {\n    series: [\"Temperature\", \"Humidity\"],\n    data: data,\n    labels: label\n};\n\nmsg.payload = [m];\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -261,14 +262,14 @@
         "y": 860,
         "wires": [
             [
-                "fbae3caf991171af"
+                "02253d00dbdf2e44"
             ]
         ]
     },
     {
-        "id": "4b18331c4302bcf6",
+        "id": "6112ac9a1e12f1e3",
         "type": "function",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "Delete data",
         "func": "msg.payload = [];\nreturn msg;",
         "outputs": 1,
@@ -281,14 +282,14 @@
         "y": 920,
         "wires": [
             [
-                "fbae3caf991171af"
+                "02253d00dbdf2e44"
             ]
         ]
     },
     {
-        "id": "7bb5da80d441d22e",
+        "id": "b5497b91211c1daa",
         "type": "postgrestor",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "sensor value",
         "query": "SELECT *\nFROM (\n    SELECT *\n    FROM humidity\n    ORDER BY id DESC\n    LIMIT 10\n) AS latest\nORDER BY id ASC;\n",
         "postgresDB": "d1c317d01ab06818",
@@ -299,32 +300,32 @@
         "y": 860,
         "wires": [
             [
-                "9c824af35ce47654"
+                "9cf25f5bd71138a0"
             ]
         ]
     },
     {
-        "id": "bffb4ac6a4b5740a",
+        "id": "f39582994e451129",
         "type": "postgrestor",
-        "z": "cc6b22398a4617fd",
-        "name": "input sensor value",
-        "query": "INSERT INTO humidity (location, value, created_at, updated_at) \nVALUES ('{{ msg.payload.location }}', {{ msg.payload.value }}, '{{ msg.payload.createdAt }}', '{{ msg.payload.createdAt }}');",
+        "z": "aff208f6d9a2dcb3",
+        "name": "input sensor value humi",
+        "query": "INSERT INTO humidity (temp, rh, created_at, updated_at) \nVALUES ('{{ msg.payload.temp }}', {{ msg.payload.rh }}, '{{ msg.payload.createdAt }}', '{{ msg.payload.createdAt }}');",
         "postgresDB": "d1c317d01ab06818",
         "output": true,
         "outputs": 1,
         "throwErrors": false,
-        "x": 670,
+        "x": 690,
         "y": 800,
         "wires": [
             [
-                "7bb5da80d441d22e"
+                "b5497b91211c1daa"
             ]
         ]
     },
     {
-        "id": "93c79a8717485681",
+        "id": "39b17ad1ac7b1769",
         "type": "ui_button",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
         "group": "240763e370494493",
         "order": 7,
@@ -345,14 +346,14 @@
         "y": 860,
         "wires": [
             [
-                "7bb5da80d441d22e"
+                "b5497b91211c1daa"
             ]
         ]
     },
     {
-        "id": "34d681bf9cefcd21",
+        "id": "0692b574e92a97a4",
         "type": "ui_button",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
         "group": "240763e370494493",
         "order": 6,
@@ -373,14 +374,14 @@
         "y": 920,
         "wires": [
             [
-                "4b18331c4302bcf6"
+                "6112ac9a1e12f1e3"
             ]
         ]
     },
     {
-        "id": "fbae3caf991171af",
+        "id": "02253d00dbdf2e44",
         "type": "ui_chart",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
         "group": "240763e370494493",
         "order": 5,
@@ -394,7 +395,7 @@
         "nodata": "There is no data, try to refresh",
         "dot": false,
         "ymin": "0",
-        "ymax": "150",
+        "ymax": "100",
         "removeOlder": 1,
         "removeOlderPoints": "",
         "removeOlderUnit": "3600",
@@ -422,11 +423,11 @@
         ]
     },
     {
-        "id": "241b792ac6b83a37",
+        "id": "c4264296122473b2",
         "type": "mqtt in",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
-        "topic": "sensor/soil_moisture",
+        "topic": "sensor-pkl/soil_moisture",
         "qos": "1",
         "datatype": "auto-detect",
         "broker": "a2f96cead7353d8d",
@@ -434,20 +435,20 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 240,
-        "y": 980,
+        "x": 220,
+        "y": 960,
         "wires": [
             [
-                "96486b69b37c11fb"
+                "1633a06207eee9c3"
             ]
         ]
     },
     {
-        "id": "57d02b4527af37d1",
+        "id": "1ea9e2da93ed182e",
         "type": "function",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "Format Data",
-        "func": "var data = [[]];\nvar label = [];\n\nfor (var i = 0; i < msg.payload.rows.length; i++) {\n    var row = msg.payload.rows[i];\n    data[0].push(row['value']);  // ambil nilai curah hujan\n\n    // Ambil jam dan menit dari created_at\n    const d = new Date(row['created_at']);\n    // d.setHours(d.getHours() + 7);\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    // Format jadi HH:MM\n    label.push(`${hours}:${minutes}`);\n}\n\nvar m = {\n    series: [\"Kelembapan tanah\"],\n    data: data,\n    labels: label\n};\n\nmsg.payload = [m];\nreturn msg;\n",
+        "func": "var data = [[]];\nvar label = [];\n\nfor (var i = 0; i < msg.payload.rows.length; i++) {\n    var row = msg.payload.rows[i];\n    data[0].push(row['moisture']);  // ambil nilai curah hujan\n   \n    const d = new Date(row['created_at']);\n    // d.setHours(d.getHours() + 7);\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    // Format jadi HH:MM\n    label.push(`${hours}:${minutes}`);\n}\n\nvar m = {\n    series: [\"Kelembapan tanah (%)\", \"status\"],\n    data: data,\n    labels: label,\n};\n\nmsg.payload = [m];\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -458,14 +459,14 @@
         "y": 1120,
         "wires": [
             [
-                "a9a513a3431284e3"
+                "627c7aa2d4271dd9"
             ]
         ]
     },
     {
-        "id": "b6973a278d9a879d",
+        "id": "e1659aababe4ce9a",
         "type": "function",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "Delete data",
         "func": "msg.payload = [];\nreturn msg;",
         "outputs": 1,
@@ -478,14 +479,14 @@
         "y": 1180,
         "wires": [
             [
-                "a9a513a3431284e3"
+                "627c7aa2d4271dd9"
             ]
         ]
     },
     {
-        "id": "2d3b2b00c58dd0c1",
+        "id": "6a7b0a7841f38bd8",
         "type": "postgrestor",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "sensor value",
         "query": "SELECT *\nFROM (\n    SELECT *\n    FROM soil_moisture\n    ORDER BY id DESC\n    LIMIT 10\n) AS latest\nORDER BY id ASC;\n",
         "postgresDB": "d1c317d01ab06818",
@@ -496,32 +497,32 @@
         "y": 1120,
         "wires": [
             [
-                "57d02b4527af37d1"
+                "1ea9e2da93ed182e"
             ]
         ]
     },
     {
-        "id": "4b4444334962d005",
+        "id": "f566d31da07d1f49",
         "type": "postgrestor",
-        "z": "cc6b22398a4617fd",
-        "name": "input sensor value",
-        "query": "INSERT INTO soil_moisture (location, value, created_at, updated_at) \nVALUES ('{{ msg.payload.location }}', {{ msg.payload.value }}, '{{ msg.payload.createdAt }}', '{{ msg.payload.createdAt }}');",
+        "z": "aff208f6d9a2dcb3",
+        "name": "input sensor value soil",
+        "query": "INSERT INTO soil_moisture (moisture, status, created_at, updated_at) \nVALUES ({{ msg.payload.moisture }}, '{{ msg.payload.status }}', '{{ msg.payload.createdAt }}', '{{ msg.payload.createdAt }}');",
         "postgresDB": "d1c317d01ab06818",
         "output": true,
         "outputs": 1,
         "throwErrors": false,
-        "x": 670,
+        "x": 680,
         "y": 1060,
         "wires": [
             [
-                "2d3b2b00c58dd0c1"
+                "6a7b0a7841f38bd8"
             ]
         ]
     },
     {
-        "id": "851176c9f585f770",
+        "id": "029606ceefa1a831",
         "type": "ui_button",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
         "group": "240763e370494493",
         "order": 11,
@@ -542,14 +543,14 @@
         "y": 1160,
         "wires": [
             [
-                "2d3b2b00c58dd0c1"
+                "6a7b0a7841f38bd8"
             ]
         ]
     },
     {
-        "id": "3cc2b8d3a2530f9e",
+        "id": "403a623b747cde83",
         "type": "ui_button",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
         "group": "240763e370494493",
         "order": 10,
@@ -570,14 +571,14 @@
         "y": 1180,
         "wires": [
             [
-                "b6973a278d9a879d"
+                "e1659aababe4ce9a"
             ]
         ]
     },
     {
-        "id": "a9a513a3431284e3",
+        "id": "627c7aa2d4271dd9",
         "type": "ui_chart",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "",
         "group": "240763e370494493",
         "order": 9,
@@ -591,7 +592,7 @@
         "nodata": "There is no data, try to refresh",
         "dot": false,
         "ymin": "0",
-        "ymax": "150",
+        "ymax": "50",
         "removeOlder": 1,
         "removeOlderPoints": "",
         "removeOlderUnit": "3600",
@@ -619,31 +620,32 @@
         ]
     },
     {
-        "id": "d1d5ce20c6ee3267",
+        "id": "8730c9f2ee8d6810",
         "type": "function",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "get data",
-        "func": "// Ambil nilai dari msg.payload.value\nlet value = msg.payload.value;\nlet location = msg.payload.location;\nlet createdAt = msg.payload.created_at;\n\nmsg.payload.value = value;\nmsg.payload.location = location;\nmsg.payload.createdAt = createdAt;\n\nreturn msg;\n ",
+        "func": "// Ambil nilai dari msg.payload.value\nlet temp = msg.payload.temp;\nlet rh = msg.payload.rh;\nlet d = new Date();\n// geser ke +7 jam\nd.setHours(d.getHours() + 7);\nlet createdAt = d.toISOString();\n\n\n// pastikan moisture adalah angka\nlet tempNum = parseFloat(temp);\nif (isNaN(tempNum)) {\n    tempNum = 0;  // default kalau kosong/error\n}\nlet rhNum = parseFloat(rh);\nif (isNaN(rhNum)) {\n    rhNum = 0;  // default kalau kosong/error\n}\n\n// set payload baru\nmsg.payload = {\n    temp: tempNum,\n    rh: rhNum,\n    createdAt: createdAt\n};\n\nreturn msg;\n ",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 460,
+        "x": 440,
         "y": 720,
         "wires": [
             [
-                "bffb4ac6a4b5740a"
+                "f39582994e451129",
+                "48d732b7a1fe4d88"
             ]
         ]
     },
     {
-        "id": "96486b69b37c11fb",
+        "id": "1633a06207eee9c3",
         "type": "function",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "get data",
-        "func": "// Ambil nilai dari msg.payload.value\nlet value = msg.payload.value;\nlet location = msg.payload.location;\nlet createdAt = msg.payload.created_at;\n\nmsg.payload.value = value;\nmsg.payload.location = location;\nmsg.payload.createdAt = createdAt;\n\nreturn msg;\n ",
+        "func": "let moisture = msg.payload.moisture;\nlet status = msg.payload.status;\n\n// Data jam yang kamu terima\nlet timeStr = msg.payload.created_at; // contoh: \"00:00:38.336\"\n\n// Ambil tanggal hari ini (tanpa jam)\nlet d = new Date();\n// geser ke +7 jam\nd.setHours(d.getHours() + 7);\nlet createdAt = d.toISOString();\n\n// Gabungkan jadi format ISO lengkap\n// let createdAtStr = `${today}T${timeStr}Z`;\n\n// Buat object Date dari string\n// let createdAt = new Date(createdAtStr);\n\n// pastikan moisture adalah angka\nlet moistureNum = parseFloat(moisture);\nif (isNaN(moistureNum)) {\n    moistureNum = 0;  // default kalau kosong/error\n}\n\n// set payload baru\nmsg.payload = {\n    moisture: moistureNum,\n    status: status || \"\",\n    createdAt: createdAt\n};\n\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -654,14 +656,63 @@
         "y": 960,
         "wires": [
             [
-                "4b4444334962d005"
+                "f566d31da07d1f49",
+                "53403d180a7561c4"
             ]
         ]
     },
     {
-        "id": "38641d5cc38c3306",
+        "id": "53403d180a7561c4",
+        "type": "debug",
+        "z": "aff208f6d9a2dcb3",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 720,
+        "y": 960,
+        "wires": []
+    },
+    {
+        "id": "48d732b7a1fe4d88",
+        "type": "debug",
+        "z": "aff208f6d9a2dcb3",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "015ed2252f17c8f3",
+        "type": "debug",
+        "z": "aff208f6d9a2dcb3",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "503affb91ea96b37",
         "type": "ui_spacer",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "spacer",
         "group": "240763e370494493",
         "order": 4,
@@ -669,9 +720,9 @@
         "height": 1
     },
     {
-        "id": "c9ea1df396faab39",
+        "id": "51efebe5904848f3",
         "type": "ui_spacer",
-        "z": "cc6b22398a4617fd",
+        "z": "aff208f6d9a2dcb3",
         "name": "spacer",
         "group": "240763e370494493",
         "order": 8,
@@ -682,7 +733,7 @@
         "id": "a2f96cead7353d8d",
         "type": "mqtt-broker",
         "name": "pkl",
-        "broker": "mqtt5",
+        "broker": "broker.emqx.io",
         "port": 1883,
         "clientid": "",
         "autoConnect": true,
@@ -756,7 +807,7 @@
         "hidden": false
     },
     {
-        "id": "762048ba97a2ed8e",
+        "id": "da14a571d9936dff",
         "type": "global-config",
         "env": [],
         "modules": {
